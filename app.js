@@ -332,9 +332,11 @@ function openDownloadModal(gameId) {
   modalContainer.classList.remove('translate-y-full');
   updateBackNavigationVisibility();
 
-  // Disparar anuncio de Monetag ÚNICAMENTE durante la navegación (al hacer clic en un juego)
-  if (typeof show_11738612 === 'function') {
-    show_11738612().catch((e) => console.warn('Monetag navigation ad bypassed:', e));
+  // Disparar anuncio Rewarded Interstitial de Monetag al seleccionar un juego
+  if (typeof show_11875578 === 'function') {
+    show_11875578().then(() => {
+      console.log('Anuncio de Monetag mostrado exitosamente');
+    }).catch((e) => console.warn('Monetag ad bypassed:', e));
   }
 
   startTimer(7);
@@ -383,8 +385,16 @@ function startTimer(seconds) {
  * 7. Paso Intermedio de Publicidad antes de la Descarga Final
  */
 function executeMonetagAndDownload() {
-  closeModal();
-  openStepModal();
+  const proceed = () => {
+    closeModal();
+    openStepModal();
+  };
+
+  if (typeof show_11875578 === 'function') {
+    show_11875578().then(proceed).catch(proceed);
+  } else {
+    proceed();
+  }
 }
 
 function openStepModal() {
@@ -458,11 +468,20 @@ function setupStepListeners() {
 
   stepFinalDownloadBtn?.addEventListener('click', () => {
     if (stepFinalDownloadBtn.disabled) return;
-    if (currentGameForDownload) {
-      trackDownload(currentGameForDownload);
+
+    const doDownload = () => {
+      if (currentGameForDownload) {
+        trackDownload(currentGameForDownload);
+      }
+      closeStepModal();
+      openDownloadLink();
+    };
+
+    if (typeof show_11875578 === 'function') {
+      show_11875578().then(doDownload).catch(doDownload);
+    } else {
+      doDownload();
     }
-    closeStepModal();
-    openDownloadLink();
   });
 }
 
