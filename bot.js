@@ -14,7 +14,7 @@ const { Telegraf, Markup } = require('telegraf');
 const BOT_TOKEN = process.env.BOT_TOKEN || '8518202859:AAGmUDeQXygGUkvZpFetpeFX1lERlQTEDIE';
 
 // Reemplazar con la URL final de tu Mini App alojada (Netlify, Vercel o Cloudflare Pages)
-const WEB_APP_URL = process.env.WEB_APP_URL || 'https://inyectorytapp.netlify.app/';
+const WEB_APP_URL = process.env.WEB_APP_URL || 'https://cocoapk.netlify.app';
 
 if (BOT_TOKEN === 'TU_BOT_TOKEN_AQUI') {
   console.warn('⚠️ ADVERTENCIA: Configura BOT_TOKEN con tu token real de @BotFather.');

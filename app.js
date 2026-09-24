@@ -332,13 +332,6 @@ function openDownloadModal(gameId) {
   modalContainer.classList.remove('translate-y-full');
   updateBackNavigationVisibility();
 
-  // Disparar anuncio Rewarded Interstitial de Monetag al seleccionar un juego
-  if (typeof show_11875578 === 'function') {
-    show_11875578().then(() => {
-      console.log('Anuncio de Monetag mostrado exitosamente');
-    }).catch((e) => console.warn('Monetag ad bypassed:', e));
-  }
-
   startTimer(7);
 }
 
@@ -468,20 +461,11 @@ function setupStepListeners() {
 
   stepFinalDownloadBtn?.addEventListener('click', () => {
     if (stepFinalDownloadBtn.disabled) return;
-
-    const doDownload = () => {
-      if (currentGameForDownload) {
-        trackDownload(currentGameForDownload);
-      }
-      closeStepModal();
-      openDownloadLink();
-    };
-
-    if (typeof show_11875578 === 'function') {
-      show_11875578().then(doDownload).catch(doDownload);
-    } else {
-      doDownload();
+    if (currentGameForDownload) {
+      trackDownload(currentGameForDownload);
     }
+    closeStepModal();
+    openDownloadLink();
   });
 }
 
