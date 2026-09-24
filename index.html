@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>APK Store - Telegram Mini App</title>
+  
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Firebase SDK (Firestore) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              dark: '#0f172a',
+              card: '#1e293b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Monetag Rewarded Interstitial SDK -->
+  <script src='//libtl.com/sdk.js' data-zone='11875578' data-sdk='show_11875578'></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-10">
+
+  <!-- Sticky Header -->
+  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <div class="flex items-center gap-2.5">
+        <!-- Botón de Atrás entre secciones/filtros/modales -->
+        <button id="headerBackBtn" class="hidden items-center justify-center w-8.5 h-8.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/70 transition-all active:scale-95 shrink-0 shadow-sm" title="Volver atrás">
+          <i class="fa-solid fa-arrow-left text-sm"></i>
+        </button>
+
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-400 flex items-center justify-center text-slate-950 font-extrabold text-xl shadow-lg shadow-green-500/20 shrink-0">
+          <i class="fa-solid fa-gamepad"></i>
+        </div>
+        <div>
+          <h1 id="appHeaderTitle" class="font-extrabold text-lg leading-none bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">APK Store</h1>
+          <p id="appHeaderSubtitle" class="text-xs text-slate-400 font-medium">Juegos & Mods Premium</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="adminLoginBtn" title="Panel de Administración" class="hidden w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-green-400 flex items-center justify-center border border-slate-700/60 transition-colors">
+          <i class="fa-solid fa-user-gear text-sm"></i>
+        </button>
+        <div class="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+          Online
+        </div>
+
+        <!-- Botón de Minimizar / Cerrar la Mini App -->
+        <button id="minimizeAppBtn" title="Minimizar / Cerrar Mini App" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-300 flex items-center justify-center border border-slate-700/70 transition-all active:scale-95 shrink-0">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Buscador en tiempo real -->
+    <div class="relative">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+      <input type="text" id="searchInput" placeholder="Buscar juegos, mods, apps..." 
+        class="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-green-500 transition-colors">
+    </div>
+
+    <!-- Filtros de Categorías -->
+    <div class="flex gap-2 overflow-x-auto scrollbar-hide mt-3 pb-1" id="categoryContainer">
+      <!-- Generado dinámicamente -->
+    </div>
+  </header>
+
+  <!-- Banner Informativo -->
+  <section class="p-4">
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 p-4 shadow-lg">
+      <div class="relative z-10">
+        <span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Destacado</span>
+        <h2 class="text-lg font-bold text-white mt-1">Juegos Modificados & Offline</h2>
+        <p class="text-xs text-emerald-100 mt-1 max-w-[80%]">Descarga directa en formato APK para Android sin acortadores molestos.</p>
+      </div>
+      <i class="fa-solid fa-cloud-arrow-down absolute -right-3 -bottom-3 text-7xl text-white/10 rotate-12"></i>
+    </div>
+  </section>
+
+  <!-- Lista / Grid de Juegos -->
+  <main class="px-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-bold text-slate-200 text-sm uppercase tracking-wider flex items-center gap-2">
+        <i class="fa-solid fa-fire text-amber-500"></i> Catálogo Disponible
+      </h3>
+      <span id="gameCount" class="text-xs font-semibold text-slate-400">0 Juegos</span>
+    </div>
+
+    <div id="gamesGrid" class="grid grid-cols-1 gap-3">
+      <!-- Tarjetas de juegos inyectadas vía app.js -->
+    </div>
+
+    <!-- Mensaje cuando no hay resultados -->
+    <div id="noResults" class="hidden text-center py-12">
+      <i class="fa-solid fa-ghost text-4xl text-slate-600 mb-3"></i>
+      <p class="text-slate-400 font-medium text-sm">No se encontraron juegos con ese criterio.</p>
+    </div>
+  </main>
+
+  <!-- Modal de Detalle y Descarga -->
+  <div id="downloadModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl max-h-[90vh] overflow-y-auto p-5 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300" id="modalContainer">
+      
+      <!-- Modal Header -->
+      <div class="flex justify-between items-start mb-4">
+        <div class="flex gap-3">
+          <img id="modalIcon" src="" alt="Game Icon" class="w-16 h-16 rounded-2xl object-cover border border-slate-700 shadow-md">
+          <div>
+            <h3 id="modalTitle" class="font-bold text-lg text-slate-100 leading-tight"></h3>
+            <span id="modalCategory" class="inline-block mt-1 text-[11px] font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-md"></span>
+            <div class="flex items-center gap-3 text-xs text-slate-400 mt-1">
+              <span id="modalSize"><i class="fa-solid fa-hard-drive mr-1"></i>0 MB</span>
+              <span id="modalVersion"><i class="fa-solid fa-code-branch mr-1"></i>v1.0</span>
+            </div>
+          </div>
+        </div>
+        <button id="closeModalBtn" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Requisitos -->
+      <div class="bg-slate-800/50 rounded-xl p-3 mb-4 text-xs text-slate-300 border border-slate-700/50 flex items-center justify-between">
+        <span class="flex items-center gap-1.5"><i class="fa-brands fa-android text-green-500 text-sm"></i> Requisito Android:</span>
+        <span id="modalReq" class="font-semibold text-slate-200">5.0 o superior</span>
+      </div>
+
+      <!-- Descripción -->
+      <div class="mb-5">
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Descripción:</h4>
+        <p id="modalDesc" class="text-xs text-slate-300 leading-relaxed"></p>
+      </div>
+
+      <!-- Sección de Descarga con Temporizador -->
+      <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center">
+        <div id="timerSection" class="space-y-3">
+          <p class="text-xs text-slate-400 font-medium">Generando enlace seguro de descarga...</p>
+          <div class="relative w-16 h-16 mx-auto flex items-center justify-center">
+            <svg class="w-full h-full transform -rotate-90">
+              <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="4" class="text-slate-800" fill="transparent"/>
+              <circle id="timerProgress" cx="32" cy="32" r="28" stroke="currentColor" stroke-width="4" class="text-green-500 transition-all duration-1000" fill="transparent" stroke-dasharray="175.9" stroke-dashoffset="0"/>
+            </svg>
+            <span id="timerText" class="absolute font-extrabold text-lg text-slate-100">7</span>
+          </div>
+        </div>
+
+        <!-- Botón de Descarga Final (Oculto inicialmente) -->
+        <div id="downloadActionSection" class="hidden space-y-2">
+          <p class="text-xs text-emerald-400 font-semibold flex items-center justify-center gap-1">
+            <i class="fa-solid fa-circle-check"></i> ¡Enlace listo y verificado!
+          </p>
+          <button id="downloadBtn" class="w-full py-3.5 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-slate-950 font-extrabold text-sm rounded-xl shadow-lg shadow-green-500/25 flex items-center justify-center gap-2 active:scale-95 transition-all">
+            <i class="fa-solid fa-download text-base"></i> Obtener APK Ahora
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal Cartel: Paso Final de Publicidad para Desbloquear APK -->
+  <div id="stepModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/90 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl max-h-[92vh] overflow-y-auto p-5 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 relative" id="stepModalContainer">
+      
+      <!-- Close Button -->
+      <button id="closeStepModalBtn" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Badge & Header -->
+      <div class="text-center mb-4 pt-2">
+        <span class="inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+          <i class="fa-solid fa-triangle-exclamation"></i> ¡Falta 1 paso más!
+        </span>
+        <h3 class="text-lg font-extrabold text-slate-100">Pasos para obtener la APK</h3>
+        <p class="text-xs text-slate-400 mt-1">Sigue estas sencillas instrucciones para desbloquear tu enlace de descarga seguro.</p>
+      </div>
+
+      <!-- Instructions List -->
+      <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-3.5 mb-4 space-y-2.5 text-xs text-slate-300">
+        <div class="flex items-start gap-2.5">
+          <span class="w-5 h-5 rounded-full bg-green-500/20 text-green-400 font-bold flex items-center justify-center flex-shrink-0 text-[11px]">1</span>
+          <p><strong class="text-slate-100">Haz clic en el botón verde</strong> de abajo para abrir la página del paso.</p>
+        </div>
+        <div class="flex items-start gap-2.5">
+          <span class="w-5 h-5 rounded-full bg-green-500/20 text-green-400 font-bold flex items-center justify-center flex-shrink-0 text-[11px]">2</span>
+          <p><strong class="text-slate-100">Toca en una publicidad</strong> dentro de esa página (como se muestra en la foto de abajo).</p>
+        </div>
+        <div class="flex items-start gap-2.5">
+          <span class="w-5 h-5 rounded-full bg-green-500/20 text-green-400 font-bold flex items-center justify-center flex-shrink-0 text-[11px]">3</span>
+          <p><strong class="text-slate-100">Espera 4 segundos</strong> dentro de la publicidad, ciérrala y vuelve aquí.</p>
+        </div>
+        <div class="flex items-start gap-2.5">
+          <span class="w-5 h-5 rounded-full bg-green-500/20 text-green-400 font-bold flex items-center justify-center flex-shrink-0 text-[11px]">4</span>
+          <p><strong class="text-slate-100">¡Listo!</strong> Tu botón de descarga final estará desbloqueado.</p>
+        </div>
+      </div>
+
+      <!-- Tutorial Photo / Visual Banner -->
+      <div class="mb-5">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-image text-green-400"></i> Dónde hacer clic (Ejemplo):
+          </span>
+        </div>
+        <div class="relative overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-950 p-2 shadow-inner">
+          <img id="stepTutorialImage" src="" alt="Instrucción de Publicidad" class="w-full h-auto rounded-xl object-contain max-h-48 hidden">
+          <!-- Fallback Visual Guide matching user's instruction screenshot -->
+          <div id="stepDefaultGuide" class="relative rounded-xl overflow-hidden bg-slate-900 border border-slate-700/80 p-3 space-y-2 text-center">
+            <div class="bg-slate-950/80 p-2 rounded-lg border border-slate-800 flex items-center justify-between text-[11px] text-slate-400 mb-2">
+              <span class="truncate font-semibold text-slate-300">Anuncios Patrocinados</span>
+              <span class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">ADS</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-left relative">
+              <!-- Ad Card Example 1 (Highlighted with arrow) -->
+              <div class="bg-slate-800/90 border-2 border-emerald-500/80 rounded-xl p-2 relative shadow-lg shadow-emerald-500/10">
+                <div class="w-full h-16 bg-slate-700/60 rounded-lg mb-1.5 flex items-center justify-center text-slate-400 overflow-hidden relative">
+                  <i class="fa-solid fa-rectangle-ad text-2xl text-emerald-400"></i>
+                  <div class="absolute inset-0 bg-emerald-500/10 animate-pulse"></div>
+                </div>
+                <p class="text-[10px] font-bold text-slate-100 line-clamp-2 leading-tight">Este es el mensaje / anuncio en la página...</p>
+                <span class="text-[8px] text-slate-400 mt-1 block">Adskeeper / Brainberries</span>
+
+                <!-- Animated Red Arrow pointing to Ad -->
+                <div class="absolute -top-3 -right-3 z-10 flex flex-col items-center animate-bounce">
+                  <div class="bg-red-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded-full shadow-lg border border-white/20 whitespace-nowrap">
+                    ¡CLIC AQUÍ!
+                  </div>
+                  <i class="fa-solid fa-location-arrow text-red-500 text-xl transform rotate-180 drop-shadow-md"></i>
+                </div>
+              </div>
+
+              <!-- Anuncio Banner (320x50) -->
+              <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-1 flex flex-col items-center justify-center min-h-[90px] overflow-hidden relative">
+                <div class="w-full flex items-center justify-center overflow-hidden scale-90 origin-center">
+                  <script type="text/javascript">
+                    atOptions = {
+                      'key' : 'e4f8385e3a339a81e3b8c19d3efbcd6f',
+                      'format' : 'iframe',
+                      'height' : 50,
+                      'width' : 320,
+                      'params' : {}
+                    };
+                  </script>
+                  <script type="text/javascript" src="https://downyattainprojects.com/e4f8385e3a339a81e3b8c19d3efbcd6f/invoke.js"></script>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-[11px] text-amber-400 font-semibold pt-1 flex items-center justify-center gap-1">
+              <i class="fa-solid fa-hand-pointer text-xs"></i> Toca un anuncio igual a estos en la página.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-2.5">
+        <!-- Paso 1: Ir a la página -->
+        <button id="stepGoToPageBtn" class="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-slate-950 font-extrabold text-sm rounded-xl shadow-lg shadow-green-500/25 flex items-center justify-center gap-2 active:scale-95 transition-all text-center">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> 1️⃣ Ir a la página para desbloquear
+        </button>
+
+        <!-- Counter / Status message after clicking -->
+        <div id="stepCountdownBox" class="hidden text-center py-2 bg-slate-950 rounded-xl border border-slate-800">
+          <p id="stepCountdownText" class="text-xs text-amber-400 font-bold flex items-center justify-center gap-2">
+            <i class="fa-solid fa-spinner animate-spin"></i> Esperando 4 segundos en la publicidad... <span id="stepTimerCount">4</span>s
+          </p>
+        </div>
+
+        <!-- Paso 2: Descargar APK Desbloqueada -->
+        <button id="stepFinalDownloadBtn" disabled class="w-full py-3.5 px-4 bg-slate-800 text-slate-500 font-extrabold text-sm rounded-xl border border-slate-700 flex items-center justify-center gap-2 transition-all cursor-not-allowed">
+          <i class="fa-solid fa-lock"></i> 2️⃣ Descargar APK Ahora (Bloqueado)
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Botón flotante para Volver Arriba / Atrás al hacer scroll -->
+  <button id="floatingBackBtn" title="Volver al Inicio" class="fixed bottom-4 right-4 z-40 hidden px-3.5 py-2.5 rounded-full bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 shadow-2xl backdrop-blur-md flex items-center gap-2 text-xs font-bold active:scale-95 transition-all">
+    <i class="fa-solid fa-arrow-up text-xs"></i> Volver Arriba
+  </button>
+
+  <!-- JavaScript Principal -->
+  <script src="app.js"></script>
+</body>
+</html>

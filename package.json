@@ -1,0 +1,23 @@
+{
+  "name": "telegram-apk-store-tma",
+  "version": "1.0.0",
+  "description": "Telegram Mini App para catálogo y descarga de APKs monetizada con Monetag",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node --watch bot.js"
+  },
+  "keywords": [
+    "telegram",
+    "tma",
+    "mini-app",
+    "apk",
+    "monetag"
+  ],
+  "author": "Senior Full-Stack Developer",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "telegraf": "^4.16.3"
+  }
+}
